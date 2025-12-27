@@ -2,7 +2,7 @@ namespace PMS.Api.Models;
 
 public enum WorkspaceRole
 {
-    Admin = 1,
-    Manager = 2,
-    Member = 3
+    Admin = 0,
+    Manager = 1,
+    Member = 2
 }

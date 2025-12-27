@@ -90,6 +90,7 @@ public class WorkspacesController : ControllerBase
     // ----------------------------
     // ADD MEMBER (ADMIN ONLY)
     // ----------------------------
+    [Authorize(Policy = "WorkspaceAdmin")]
     [HttpPost("{workspaceId}/members")]
     public async Task<IActionResult> AddMember(
         Guid workspaceId,

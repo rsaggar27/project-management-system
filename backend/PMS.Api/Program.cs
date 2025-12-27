@@ -5,6 +5,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using PMS.Api.Services;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using PMS.Api.Authorization;
+using PMS.Api.Models;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,6 +35,19 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(jwtConfig["Key"]!)
         )
     };
+});
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuthorizationHandler, WorkspaceRoleHandler>();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("WorkspaceAdmin",
+        policy => policy.Requirements.Add(
+            new WorkspaceRoleRequirement(WorkspaceRole.Admin)));
+
+    options.AddPolicy("WorkspaceManager",
+        policy => policy.Requirements.Add(
+            new WorkspaceRoleRequirement(WorkspaceRole.Manager)));
 });
 
 builder.Services.AddScoped<JwtService>();
@@ -107,6 +123,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
 
 
 // Map controllers
