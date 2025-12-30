@@ -48,6 +48,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("WorkspaceManager",
         policy => policy.Requirements.Add(
             new WorkspaceRoleRequirement(WorkspaceRole.Manager)));
+
+    options.AddPolicy("WorkspaceMember",
+        policy => policy.Requirements.Add(
+            new WorkspaceRoleRequirement(WorkspaceRole.Member)));
 });
 
 builder.Services.AddScoped<JwtService>();

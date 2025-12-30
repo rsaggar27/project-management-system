@@ -2,8 +2,8 @@ namespace PMS.Api.Models;
 
 public enum ProjectRole
 {
-    Lead = 1,
-    Contributor = 2,
-    Viewer = 3
+    Lead = 0,
+    Contributor = 1,
+    Viewer = 2
 }
 

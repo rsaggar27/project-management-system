@@ -17,7 +17,7 @@ public class Project
     public Guid CreatedById { get; set; }
     public User CreatedBy { get; set; } = null!;
 
-    public bool IsArchived { get; set; } = false;
+    public ProjectStatus Status { get; set; } = ProjectStatus.Active;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
