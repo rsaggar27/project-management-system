@@ -138,4 +138,27 @@ public class WorkspacesController : ControllerBase
 
         return Ok();
     }
+
+    // ---------------------------------
+    // LIST WORKSPACE MEMBERS
+    // ---------------------------------
+    [Authorize(Policy = "WorkspaceMember")]
+    [HttpGet("api/workspaces/{workspaceId}/members")]
+    public async Task<IActionResult> GetMembers(Guid workspaceId)
+    {
+        var members = await _db.WorkspaceMembers
+            .Where(wm => wm.WorkspaceId == workspaceId)
+            .Select(wm => new WorkspaceMemberResponse
+            {
+                UserId = wm.UserId,
+                Email = wm.User.Email,
+                Role = wm.Role,
+                JoinedAt = wm.JoinedAt
+            })
+            .OrderBy(m => m.Role) // Admin first
+            .ToListAsync();
+
+        return Ok(members);
+    }
+
 }

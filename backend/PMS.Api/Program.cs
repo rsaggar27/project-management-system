@@ -54,6 +54,21 @@ builder.Services.AddAuthorization(options =>
             new WorkspaceRoleRequirement(WorkspaceRole.Member)));
 });
 
+builder.Services.AddScoped<IAuthorizationHandler, ProjectRoleHandler>();
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("ProjectLead",
+        p => p.Requirements.Add(new ProjectRoleRequirement(ProjectRole.Lead)));
+
+    options.AddPolicy("ProjectContributor",
+        p => p.Requirements.Add(new ProjectRoleRequirement(ProjectRole.Contributor)));
+
+    options.AddPolicy("ProjectViewer",
+        p => p.Requirements.Add(new ProjectRoleRequirement(ProjectRole.Viewer)));
+});
+
+
 builder.Services.AddScoped<JwtService>();
 
 

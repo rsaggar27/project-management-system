@@ -8,5 +8,7 @@ public class ProjectMember
     public Guid ProjectId { get; set; }
     public Project Project { get; set; } = null!;
 
+    public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
+
     public ProjectRole Role { get; set; }
 }

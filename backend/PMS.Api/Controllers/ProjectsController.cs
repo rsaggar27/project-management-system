@@ -113,4 +113,101 @@ public class ProjectsController : ControllerBase
 
         return NoContent();
     }
+
+    // ---------------------------------
+    // LIST PROJECT MEMBERS
+    // ---------------------------------
+    [Authorize(Policy = "ProjectViewer")]
+    [HttpGet("api/projects/{projectId}/members")]
+    public async Task<IActionResult> GetMembers(Guid projectId)
+    {
+        var members = await _db.ProjectMembers
+            .Where(pm => pm.ProjectId == projectId)
+            .Select(pm => new ProjectMemberResponse
+            {
+                UserId = pm.UserId,
+                Email = pm.User.Email,
+                Role = pm.Role,
+                JoinedAt = pm.JoinedAt
+            })
+            .OrderBy(m => m.Role) // Lead → Contributor → Viewer
+            .ToListAsync();
+
+        return Ok(members);
+    }
+
+    // ---------------------------------
+    // ADD PROJECT MEMBERS
+    // ---------------------------------
+    [Authorize(Policy = "WorkspaceManager")]
+    [HttpPost("api/workspaces/{workspaceId}/projects/{projectId}/members")]
+    public async Task<IActionResult> AddMember(
+    Guid workspaceId, Guid projectId, AddProjectMemberRequest req)
+    {
+        // Ensure project exists
+        var project = await _db.Projects.FindAsync(projectId);
+        if (project == null)
+            return NotFound();
+
+        // Ensure user is workspace member
+        var isWorkspaceMember = await _db.WorkspaceMembers.AnyAsync(wm =>
+            wm.UserId == req.UserId &&
+            wm.WorkspaceId == project.WorkspaceId);
+
+        if (!isWorkspaceMember)
+            return BadRequest("User is not a workspace member");
+
+        // Upsert project member
+        var member = await _db.ProjectMembers
+            .FindAsync(req.UserId, projectId);
+
+        if (member == null)
+        {
+            member = new ProjectMember
+            {
+                UserId = req.UserId,
+                ProjectId = projectId,
+                Role = req.Role
+            };
+            _db.ProjectMembers.Add(member);
+        }
+        else
+        {
+            member.Role = req.Role;
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok();
+    }
+    
+    // ---------------------------------
+    // UPDATE PROJECT MEMBER ROLE (Lead only)
+    // ---------------------------------
+    [Authorize(Policy = "ProjectLead")]
+    [HttpPut("api/projects/{projectId}/members/{userId}/role")]
+    public async Task<IActionResult> UpdateMemberRole(
+        Guid projectId,
+        Guid userId,
+        UpdateProjectMemberRoleRequest req)
+    {
+        var currentUserId = GetUserId();
+
+        // Prevent self-demotion
+        if (currentUserId == userId)
+            return BadRequest("You cannot change your own role");
+
+        var member = await _db.ProjectMembers.FirstOrDefaultAsync(pm =>
+            pm.ProjectId == projectId &&
+            pm.UserId == userId);
+
+        if (member == null)
+            return NotFound("User is not a member of this project");
+
+        member.Role = req.Role;
+
+        await _db.SaveChangesAsync();
+        return Ok();
+    }
+
+
 }
