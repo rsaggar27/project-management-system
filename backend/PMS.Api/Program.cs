@@ -38,6 +38,13 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<EmailDispatcher>();
+builder.Services.Configure<EmailOptions>(
+    builder.Configuration.GetSection("Email"));
+
+builder.Services.AddScoped<EmailService>();
+
 builder.Services.AddScoped<IAuthorizationHandler, WorkspaceRoleHandler>();
 builder.Services.AddAuthorization(options =>
 {

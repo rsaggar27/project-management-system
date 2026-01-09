@@ -16,11 +16,16 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly JwtService _jwt;
+    private readonly EmailDispatcher _emailDispatcher;
 
-    public AuthController(AppDbContext db, JwtService jwt)
+    public AuthController(
+        AppDbContext db,
+        JwtService jwt,
+        EmailDispatcher emailDispatcher)
     {
         _db = db;
         _jwt = jwt;
+        _emailDispatcher = emailDispatcher;
     }
 
     [HttpPost("register")]
@@ -53,6 +58,30 @@ public class AuthController : ControllerBase
             return Unauthorized("Invalid credentials");
 
         var token = _jwt.GenerateToken(user);
+
+        // 📧 Login email (best-effort, never block login)
+        try
+        {
+            _emailDispatcher.Send(
+                to: user.Email,
+                subject: "New login to your account",
+                body:
+            $@"Hi {user.FullName},
+
+            A new login to your account was detected.
+
+            Time: {DateTime.UtcNow:u}
+            IP: {HttpContext.Connection.RemoteIpAddress}
+            Device: {Request.Headers["User-Agent"]}
+
+            If this wasn't you, please reset your password immediately."
+            );
+        }
+        catch (Exception ex)
+        {
+            // Intentionally ignored
+            Console.WriteLine($"[LOGIN EMAIL FAILED] {ex.Message}");
+        }
 
         return Ok(new { token });
     }

@@ -5,6 +5,7 @@ using PMS.Api.Data;
 using PMS.Api.DTOs;
 using PMS.Api.Models;
 using System.Security.Claims;
+using PMS.Api.Services;
 using TaskStatus = PMS.Api.Models.TaskStatus;
 
 namespace PMS.Api.Controllers;
@@ -14,11 +15,16 @@ namespace PMS.Api.Controllers;
 public class TasksController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly NotificationService _notifications;
 
-    public TasksController(AppDbContext db)
+    public TasksController(
+        AppDbContext db,
+        NotificationService notifications)
     {
         _db = db;
+        _notifications = notifications;
     }
+
 
     private Guid UserId =>
         Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -77,6 +83,8 @@ public class TasksController : ControllerBase
             .Include(t => t.Project)
             .FirstOrDefaultAsync(t => t.Id == taskId);
 
+        Console.WriteLine($"Task: {task}");
+
         if (task == null)
             return NotFound("Task not found");
 
@@ -93,12 +101,29 @@ public class TasksController : ControllerBase
         if (member.Role == ProjectRole.Viewer)
             return BadRequest("Cannot assign tasks to a viewer");
 
+        // No-op assignment
+        if (task.AssigneeId == req.AssigneeId)
+            return NoContent();
+
+        var currentUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
         task.AssigneeId = req.AssigneeId;
         task.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
-        return Ok();
+
+        // 🔔 Notification 
+        
+            await _notifications.CreateAsync(
+                userId: req.AssigneeId,
+                type: "TaskAssigned",
+                message: $"You were assigned to task '{task.Title}' in project '{task.Project.Name}'."
+            );
+        
+
+        return NoContent();
     }
+
 
 
     // UPDATE STATUS (Contributor+ but controlled)
